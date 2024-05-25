@@ -159,6 +159,7 @@ void Simulator::simulatorRunThread() {
             
             frameLock.lock();
             cv::flip(imgBuffer, m_frame, 0);
+            cv::cvtColor(m_frame, m_frame, cv::COLOR_RGB2BGR);
             frameLock.unlock();
             cv::cvtColor(imgBuffer, img, cv::COLOR_RGBA2GRAY);
             img.convertTo(img, CV_8UC1);
