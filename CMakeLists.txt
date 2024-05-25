@@ -40,6 +40,10 @@ find_package(PCL 1.8 REQUIRED)
 add_subdirectory(Thirdparty)
 find_package(Pangolin REQUIRED PATHS "${CMAKE_CURRENT_SOURCE_DIR}Thirdparty/Pangolin")
 
+
+find_package(CURL REQUIRED)
+find_package(nlohmann_json REQUIRED)
+
 include_directories(
 
         ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/
@@ -55,6 +59,9 @@ include_directories(
         ${PCL_INCLUDE_DIRS}
         ${PROJECT_SOURCE_DIR}/tools
 )
+
+include_directories(${CURL_INCLUDE_DIRS})
+include_directories(${nlohmann_json_INCLUDE_DIRS})
 
 # Add definitions
 add_definitions(${PCL_DEFINITIONS})
@@ -100,6 +107,8 @@ target_link_libraries(${PROJECT_NAME}
         -lpthread ${PYTHON_LIBRARIES}
 	    -lboost_serialization
 	    -lboost_system
+        ${CURL_LIBRARIES} 
+        nlohmann_json::nlohmann_json
         )
 add_library(simulator tools/simulator/simulator.cpp)
 target_link_libraries(simulator ${PROJECT_NAME})

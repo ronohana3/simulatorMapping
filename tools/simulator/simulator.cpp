@@ -11,6 +11,13 @@ cv::Mat Simulator::getCurrentLocation() {
     return locationCopy;
 }
 
+void Simulator::getFrame(cv::Mat &dst) {
+    frameLock.lock();
+    if (!m_frame.empty())
+        m_frame.copyTo(dst);
+    frameLock.unlock();
+}
+
 Simulator::Simulator(std::string ORBSLAMConfigFile, std::string model_path, std::string modelTextureNameToAlignTo,
                      bool trackImages,
                      bool saveMap, std::string simulatorOutputDirPath, bool loadMap, std::string mapLoadPath,
@@ -98,13 +105,19 @@ void Simulator::simulatorRunThread() {
     });// ORBSLAM y axis is reversed
     pangolin::RegisterKeyPressCallback('f', [&]() { applyUpModelCam(s_cam, movementFactor); });
     const pangolin::Geometry modelGeometry = pangolin::LoadGeometry(modelPath);
+    
+    // std::cout << modelPath << std::endl;
+    // std::cout << modelTextureNameToAlignTo << std::endl;
+    // std::cout << modelGeometry.textures.size() << std::endl;
+    // std::cout << modelGeometry.objects.size() << std::endl;
+    // std::cout << modelGeometry.buffers.size() << std::endl;
+
     alignModelViewPointToSurface(modelGeometry, modelTextureNameToAlignTo);
     geomToRender = pangolin::ToGlGeometry(modelGeometry);
     for (auto &buffer: geomToRender.buffers) {
         buffer.second.attributes.erase("normal");
     }
     cv::Mat img;
-
     auto LoadProgram = [&]() {
         program.ClearShaders();
         program.AddShader(pangolin::GlSlAnnotatedShader, pangolin::shader);
@@ -117,7 +130,7 @@ void Simulator::simulatorRunThread() {
             .SetHandler(&handler);
     int numberOfFramesForOrbslam = 0;
     while (!pangolin::ShouldQuit() && !stopFlag) {
-        ready = true;
+        // ready = true;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (d_cam.IsShown()) {
@@ -141,11 +154,17 @@ void Simulator::simulatorRunThread() {
             glReadBuffer(GL_BACK);
             glPixelStorei(GL_PACK_ALIGNMENT, 1);
             glReadPixels(0, 0, viewport_size[2], viewport_size[3], GL_RGBA, GL_UNSIGNED_BYTE, buffer.ptr);
-
+            
             cv::Mat imgBuffer = cv::Mat(viewport_size[3], viewport_size[2], CV_8UC4, buffer.ptr);
+            
+            frameLock.lock();
+            cv::flip(imgBuffer, m_frame, 0);
+            frameLock.unlock();
             cv::cvtColor(imgBuffer, img, cv::COLOR_RGBA2GRAY);
             img.convertTo(img, CV_8UC1);
             cv::flip(img, img, 0);
+
+            ready = true;
 
             auto now = std::chrono::system_clock::now();
             auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
@@ -277,7 +296,7 @@ void Simulator::applyPitchRotationToModelCam(pangolin::OpenGlRenderState &cam, d
             0, c, -s,
             0, s, c;
 
-    Eigen::Matrix4d pangolinR = Eigen::Matrix4d::Identity();;
+    Eigen::Matrix4d pangolinR = Eigen::Matrix4d::Identity();
     pangolinR.block<3, 3>(0, 0) = R;
 
     auto camMatrix = pangolin::ToEigen<double>(cam.GetModelViewMatrix());
@@ -382,7 +401,7 @@ void Simulator::applyYawRotationToModelCam(pangolin::OpenGlRenderState &cam, dou
         }
     }
 
-    cam.SetModelViewMatrix(newModelView);
+    cam.SetModelViewMatrix(newModelView); 
 }
 
 void

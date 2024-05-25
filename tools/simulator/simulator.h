@@ -11,6 +11,9 @@
 #include <pangolin/gl/glsl.h>
 #include <pangolin/gl/glvbo.h>
 #include <functional>
+#include <vector>
+
+#include <matplotlibcpp.h>
 
 #include <pangolin/utils/file_utils.h>
 #include <pangolin/geometry/glgeometry.h>
@@ -39,6 +42,7 @@
  */
 class Simulator {
 public:
+    pangolin::OpenGlRenderState s_cam;
     /**
  * Constructs a Simulator instance with specified parameters, and loads the ORBSLAM2 object.
  *
@@ -75,6 +79,9 @@ public:
  * @return is the simulator is ready
  * */
     bool isReady(){return ready;}
+
+
+   void getFrame(cv::Mat &dst);
 
     /**
  * @brief Fetches the current location matrix from ORBSLAM2.
@@ -135,7 +142,6 @@ private:
             {"flip",    false},
             {"rc",      false}};
     std::shared_ptr<ORB_SLAM2::System> SLAM;
-    pangolin::OpenGlRenderState s_cam;
     Eigen::Matrix3d K;
     ORB_SLAM2::ORBextractor *orbExtractor;
     std::string simulatorOutputDir;
@@ -156,6 +162,8 @@ private:
     Eigen::Vector2i viewportDesiredSize;
     cv::Mat Tcw;
     std::mutex locationLock;
+    std::mutex frameLock;
+    cv::Mat m_frame;
 
     void simulatorRunThread();
 
