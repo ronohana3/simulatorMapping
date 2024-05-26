@@ -6,11 +6,23 @@
 
 #include "simulator/simulator.h"
 
+typedef struct sCamParam
+{
+    uint width;
+    uint height;
+    float fx;
+    float fy;
+    float cx;
+    float cy;
+    float f() { return (fx + fy)/2; };
+} CamParam;
+
 class CameraController 
 {
 public:
-    CameraController(Simulator* sim);
+    CameraController(Simulator* sim, CamParam &par);
     void getFrame(cv::Mat &dst);
+    CamParam param;
 private:
     Simulator* simulator;
 };

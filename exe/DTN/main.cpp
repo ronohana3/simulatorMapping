@@ -48,7 +48,25 @@ int main(int argc, char **argv) {
     CMT tracker = CMT();
     bool isTracking = false;
     int i = 1;
-    DroneController drone(&simulator);
+
+    // CamParam cameraParameters = {
+    //     .width = 640,
+    //     .height = 480,
+    //     .fx = 619.6508392029048,
+    //     .fy = 618.5264705043031,
+    //     .cx = 321.88905699582324,
+    //     .cy = 243.8086797913814
+    // };
+    CamParam cameraParameters = {
+        .width = 640,
+        .height = 480,
+        .fx = 310,
+        .fy = 310,
+        .cx = 320,
+        .cy = 240
+    };
+    DroneController drone(&simulator, cameraParameters);
+
     namedWindow("Stream");
 
     // int fourcc = VideoWriter::fourcc('X', 'V', 'I', 'D');
@@ -112,7 +130,7 @@ int main(int argc, char **argv) {
 
                 std::cout << "Active points: " << tracker.points_active.size() << std::endl;
                 
-                drone.navigateToBox(frame, tracker.bb_rot);
+                drone.navigateToBox(tracker.bb_rot);
                 
             }
             else
