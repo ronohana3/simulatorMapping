@@ -8,7 +8,7 @@ void DroneController::getFrame(cv::Mat &dst)
     camera.getFrame(dst);
 }
 
-void DroneController::navigateToBox(const cv::RotatedRect &box)
+void DroneController::navigateToBox(const cv::Rect &box)
 { 
     navigationController.moveAlongBoxDirection(box, 0.2, 1);
     // std::string c;

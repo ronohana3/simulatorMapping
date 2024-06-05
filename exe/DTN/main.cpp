@@ -36,7 +36,9 @@ int main(int argc, char **argv) {
         usleep(1000);
     }
     
-    auto mvm = pangolin::ModelViewLookAt(-3.8966, 0.974479 ,3.55261 ,-3.566 ,0.98659, 1.03574, 0, 1.0, 0);
+    // To generate new starting position use NRSimulator.exe and press g. 
+    auto mvm = pangolin::ModelViewLookAt(1.58662,0.557122,-0.751696,0.89928,0.555703,-0.812255, 0, 1.0, 0);
+    // auto mvm = pangolin::ModelViewLookAt(-3.8966, 0.974479 ,3.55261 ,-3.566 ,0.98659, 1.03574, 0, 1.0, 0);
     simulator.s_cam.SetModelViewMatrix(mvm);
 
 
@@ -60,8 +62,8 @@ int main(int argc, char **argv) {
     CamParam cameraParameters = {
         .width = 640,
         .height = 480,
-        .fx = 310,
-        .fy = 310,
+        .fx = 140,
+        .fy = 140,
         .cx = 320,
         .cy = 240
     };
@@ -69,7 +71,7 @@ int main(int argc, char **argv) {
 
     namedWindow("Stream");
 
-    // int fourcc = VideoWriter::fourcc('X', 'V', 'I', 'D');
+    // int fourcc = VideoWriter::fourcc('M', 'J', 'P', 'G');
     // string destVideoPath = "/home/ron/Project/simulatorVideos/sim_output.avi";
     // VideoWriter writer;
     // writer.open(destVideoPath, fourcc, 10, Size(640, 480));
@@ -86,7 +88,7 @@ int main(int argc, char **argv) {
 
         cvtColor(frame, grayFrame, COLOR_BGR2GRAY);
 
-        std::cout << "Start proccesing frame #" << i << std::endl;
+        std::cout << "Start proccesing frame "<< frame.size() <<" #" << i << std::endl;
         std::cout << "Tracking: " << (isTracking ? "yes" : "no" ) << std::endl;
 
         // Detection
@@ -130,7 +132,7 @@ int main(int argc, char **argv) {
 
                 std::cout << "Active points: " << tracker.points_active.size() << std::endl;
                 
-                drone.navigateToBox(tracker.bb_rot);
+                drone.navigateToBox(tracker.bb_rot.boundingRect());
                 
             }
             else

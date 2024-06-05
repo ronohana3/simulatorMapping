@@ -10,7 +10,7 @@ class DroneController
 {
 public:
     DroneController(Simulator *sim, CamParam par);
-    void navigateToBox(const cv::RotatedRect &box);
+    void navigateToBox(const cv::Rect &box);
     void getFrame(cv::Mat &dst);
 private:
     NavigationController navigationController;

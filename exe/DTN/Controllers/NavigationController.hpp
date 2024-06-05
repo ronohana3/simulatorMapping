@@ -9,7 +9,7 @@ class NavigationController
 {
 public:
     NavigationController(Simulator *sim, CamParam &par) : simulator(sim), camParam(par) {};
-    void moveAlongBoxDirection(const cv::RotatedRect &box, double distance, double velocity);
+    void moveAlongBoxDirection(const cv::Rect &box, double distance, double velocity);
 private:
     Simulator* simulator;
     CamParam camParam;
