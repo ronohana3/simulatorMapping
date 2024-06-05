@@ -78,14 +78,6 @@ int main(int argc, char **argv) {
             cout << "Mat Inv" << endl; 
             cout << mat.inverse() << endl;
         }
-        else if (c == 'm')
-        {
-            Eigen::Matrix4d mat = simulator.s_cam.GetModelViewMatrix();
-            cout << "Mat" << endl;    
-            cout << mat << endl;
-            cout << "Mat Inv" << endl; 
-            cout << mat.inverse() << endl;
-        }
         else if (c == 'r')
         {
             simulator.s_cam.SetModelViewMatrix(reset_mvm);
