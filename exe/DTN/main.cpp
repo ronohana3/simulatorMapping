@@ -72,10 +72,9 @@ int main(int argc, char **argv) {
     namedWindow("Stream");
 
     // int fourcc = VideoWriter::fourcc('M', 'J', 'P', 'G');
-    // string destVideoPath = "/home/ron/Project/simulatorVideos/sim_output.avi";
+    // string destVideoPath = "/home/rbdlab/Projects/IronDrone/simulatorVideos/sim_output.avi";
     // VideoWriter writer;
     // writer.open(destVideoPath, fourcc, 10, Size(640, 480));
-    // string destFramePath = "/home/ron/Project/simulatorVideos/frame_";
 
     while (true) 
     {
@@ -149,7 +148,6 @@ int main(int argc, char **argv) {
 
         // if (writer.isOpened())
         //     writer.write(frame);
-        // imwrite(destFramePath + to_string(i) + ".jpg", frame);
 
         int key = cv::waitKey(1);
         
