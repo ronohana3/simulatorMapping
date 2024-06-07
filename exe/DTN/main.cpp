@@ -16,33 +16,19 @@ using namespace std;
 using namespace cmt;
 
 int main(int argc, char **argv) {    
-    std::string settingPath = Auxiliary::GetGeneralSettingsPath();
-    std::ifstream programData(settingPath);
-    nlohmann::json data;
-    programData >> data;
-    programData.close();
-    std::string configPath = data["DroneYamlPathSlam"];
-    std::string VocabularyPath = data["VocabularyPath"];
-    std::string modelTextureNameToAlignTo = data["modelTextureNameToAlignTo"];
-    std::string model_path = data["modelPath"];
-    std::string map_input_dir = data["mapInputDir"];
-    bool trackImages = data["trackImages"];
-    double movementFactor = data["movementFactor"];
-    Simulator simulator(configPath, model_path, modelTextureNameToAlignTo, trackImages, false, map_input_dir, false,
-                        "", movementFactor,VocabularyPath);
-    simulator.setTrack(false);
-    auto simulatorThread = simulator.run();
-    while (!simulator.isReady()) { // wait for the 3D model to load
+    
+    Simulator *simulator = new Simulator();
+
+    auto simulatorThread = simulator->run();
+    while (!simulator->isReady()) { // wait for the 3D model to load
         usleep(1000);
     }
     
     // To generate new starting position use NRSimulator.exe and press g. 
-    auto mvm = pangolin::ModelViewLookAt(1.58662,0.557122,-0.751696,0.89928,0.555703,-0.812255, 0, 1.0, 0);
-    // auto mvm = pangolin::ModelViewLookAt(-3.8966, 0.974479 ,3.55261 ,-3.566 ,0.98659, 1.03574, 0, 1.0, 0);
-    simulator.s_cam.SetModelViewMatrix(mvm);
+    // auto mvm = pangolin::ModelViewLookAt(1.58662,0.557122,-0.751696,0.89928,0.555703,-0.812255, 0, 1.0, 0);
+    auto mvm = pangolin::ModelViewLookAt(-0.00131965,1.00848,-1.88549,-0.00162125,1.00623,-1.3855, 0, 1.0, 0);
+    simulator->s_cam.SetModelViewMatrix(mvm);
 
-
-    // our simulator
     
     Inference inf("http://localhost:5000/inference", cv::Size(640, 640));
     Mat frame, grayFrame;
@@ -67,7 +53,7 @@ int main(int argc, char **argv) {
         .cx = 320,
         .cy = 240
     };
-    DroneController drone(&simulator, cameraParameters);
+    DroneController drone(simulator, cameraParameters);
 
     namedWindow("Stream");
 
@@ -75,6 +61,9 @@ int main(int argc, char **argv) {
     // string destVideoPath = "/home/rbdlab/Projects/IronDrone/simulatorVideos/sim_output.avi";
     // VideoWriter writer;
     // writer.open(destVideoPath, fourcc, 10, Size(640, 480));
+
+    std::thread detectionThread;
+    std::thread trackingThread;
 
     while (true) 
     {
@@ -114,8 +103,9 @@ int main(int argc, char **argv) {
         }
         else
         {
-            tracker.processFrame(grayFrame);
-
+            trackingThread = thread(&CMT::processFrame, tracker, grayFrame);
+            // tracker.processFrame(grayFrame);
+            trackingThread.join();
             if(0.05*tracker.init_points_active_size < tracker.points_active.size() && tracker.points_active.size() > 10)
             {
                 Point2f vertices[4];
@@ -163,4 +153,5 @@ int main(int argc, char **argv) {
 
     // This line stop the exceuation of this thread until simulatorThread will finish.
     simulatorThread.join();
+    delete simulator;
 }

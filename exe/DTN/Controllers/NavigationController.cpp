@@ -73,11 +73,19 @@ cv::Point3f NavigationController::pixelToDirection(const cv::Point2i &pixel)
 
 void NavigationController::moveAlongDirection(const cv::Point3f &direction, double distance, double velocity)
 {
-    // std::cout << "direction=" << direction << " direction norm=" << cv::norm(direction) << std::endl;
+    // if (direction.x > 0)
+    //     moveRight(distance*abs(direction.x), velocity);
+    // else
+    //     moveLeft(distance*abs(direction.x), velocity);
+    cout << std::acos(direction.z/(std::sqrt(direction.z*direction.z + direction.x*direction.x))) << endl;
+    
+    // float angle = std::acos(direction.z/(std::sqrt(direction.x*direction.x + direction.y*direction.y)));
+    float angle = 2;
+    cout << "anlge is " << angle << endl;
     if (direction.x > 0)
-        moveRight(distance*abs(direction.x), velocity);
+        rotateCw(angle, velocity);
     else
-        moveLeft(distance*abs(direction.x), velocity);
+        rotateCcw(angle, velocity);
     
     if (direction.y > 0)
         moveDown(distance*abs(direction.y), velocity);

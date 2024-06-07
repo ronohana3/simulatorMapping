@@ -10,7 +10,7 @@ void DroneController::getFrame(cv::Mat &dst)
 
 void DroneController::navigateToBox(const cv::Rect &box)
 { 
-    navigationController.moveAlongBoxDirection(box, 0.2, 1);
+    navigationController.moveAlongBoxDirection(box, 0.5, 1);
     // std::string c;
     // float distance = 1.0 - (float)box.boundingRect().area()/frame.size().area();
     // std::cout << distance << std::endl;
