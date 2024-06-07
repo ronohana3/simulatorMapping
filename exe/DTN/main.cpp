@@ -37,33 +37,23 @@ int main(int argc, char **argv) {
     bool isTracking = false;
     int i = 1;
 
-    // CamParam cameraParameters = {
-    //     .width = 640,
-    //     .height = 480,
-    //     .fx = 619.6508392029048,
-    //     .fy = 618.5264705043031,
-    //     .cx = 321.88905699582324,
-    //     .cy = 243.8086797913814
-    // };
     CamParam cameraParameters = {
         .width = 640,
         .height = 480,
-        .fx = 140,
-        .fy = 140,
-        .cx = 320,
-        .cy = 240
+        .fx = 619.6508392029048,
+        .fy = 618.5264705043031,
+        .cx = 321.88905699582324,
+        .cy = 243.8086797913814
     };
+
     DroneController drone(simulator, cameraParameters);
 
     namedWindow("Stream");
 
-    // int fourcc = VideoWriter::fourcc('M', 'J', 'P', 'G');
-    // string destVideoPath = "/home/rbdlab/Projects/IronDrone/simulatorVideos/sim_output.avi";
-    // VideoWriter writer;
-    // writer.open(destVideoPath, fourcc, 10, Size(640, 480));
-
-    std::thread detectionThread;
-    std::thread trackingThread;
+    int fourcc = VideoWriter::fourcc('M', 'J', 'P', 'G');
+    string destVideoPath = "/home/rbdlab/Projects/IronDrone/simulatorVideos/sim_output.avi";
+    VideoWriter writer;
+    writer.open(destVideoPath, fourcc, 10, Size(640, 480));
 
     while (true) 
     {
@@ -103,9 +93,9 @@ int main(int argc, char **argv) {
         }
         else
         {
-            trackingThread = thread(&CMT::processFrame, tracker, grayFrame);
-            // tracker.processFrame(grayFrame);
-            trackingThread.join();
+            // trackingThread = thread(&CMT::processFrame, tracker, grayFrame);
+            tracker.processFrame(grayFrame);
+            // trackingThread.join();
             if(0.05*tracker.init_points_active_size < tracker.points_active.size() && tracker.points_active.size() > 10)
             {
                 Point2f vertices[4];
@@ -121,8 +111,14 @@ int main(int argc, char **argv) {
 
                 std::cout << "Active points: " << tracker.points_active.size() << std::endl;
                 
-                drone.navigateToBox(tracker.bb_rot.boundingRect());
-                
+                auto trackingBox = tracker.bb_rot.boundingRect();
+                std::thread([&, trackingBox] {
+                    auto start = std::chrono::system_clock::now();
+                    drone.navigateToBox(trackingBox);
+                    auto end = std::chrono::system_clock::now();
+                    std::cout << "navigateToBox duration: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+                }).join();
+            
             }
             else
             {
@@ -136,10 +132,10 @@ int main(int argc, char **argv) {
         i++;
         cv::imshow("Stream", frame);
 
-        // if (writer.isOpened())
-        //     writer.write(frame);
+        if (writer.isOpened())
+            writer.write(frame);
 
-        int key = cv::waitKey(1);
+        int key = cv::waitKey(50);
         
         if (key != -1)
         {
@@ -149,7 +145,7 @@ int main(int argc, char **argv) {
 
     destroyAllWindows();
 
-    // writer.release();
+    writer.release();
 
     // This line stop the exceuation of this thread until simulatorThread will finish.
     simulatorThread.join();

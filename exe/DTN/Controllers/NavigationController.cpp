@@ -2,51 +2,65 @@
 
 void NavigationController::moveAlongBoxDirection(const cv::Rect &box, double distance, double velocity)
 {
-    cv::Point2i boxCenterPixel = cv::Point2i(box.x + box.width/2, box.y + box.height/2); 
-    cv::Point3f direction = pixelToDirection(boxCenterPixel);
-    moveAlongDirection(direction, distance, velocity);
+    cv::Point2i boxCenterPixel = cv::Point2i(box.x + box.width/2, box.y + box.height/2);
+
+    
+    float distanceFromDrone = 1.0 - (float)box.area()/(camParam.width * camParam.height);
+    cv::Point2i frameCenterPixel = cv::Point2i((int)camParam.cx, (int)camParam.cy);
+
+    if (abs(boxCenterPixel.y - frameCenterPixel.y) < 5 && abs(boxCenterPixel.x - frameCenterPixel.x) < 5 && distanceFromDrone < 0.7)
+    {   
+        // Attack
+        moveForward(0.6, velocity);
+    }
+    else
+    {
+        cv::Point3f direction = pixelToDirection(boxCenterPixel);
+        moveAlongDirection(direction, distance, velocity);
+    }
+    
 }
 
 void NavigationController::moveUp(double distance, double velocity) 
 {
     std::string c = "up " + std::to_string(distance);
-    simulator->command(c);
+    simulator->command(c, commandIntervalUsleep, commandFps, totalCommandTimeInSecond);
 }
 
 void NavigationController::moveDown(double distance, double velocity)
 {
     std::string c = "down " + std::to_string(distance);
-    simulator->command(c);
+    simulator->command(c, commandIntervalUsleep, commandFps, totalCommandTimeInSecond);
 }
 
 void NavigationController::moveForward(double distance, double velocity)
 {
     std::string c = "forward " + std::to_string(distance);
-    simulator->command(c);
+    simulator->command(c, commandIntervalUsleep, commandFps, totalCommandTimeInSecond);
 }
 
 void NavigationController::moveLeft(double distance, double velocity)
 {
     std::string c = "left " + std::to_string(distance);
-    simulator->command(c);
+    simulator->command(c, commandIntervalUsleep, commandFps, totalCommandTimeInSecond);
 }
 
 void NavigationController::moveRight(double distance, double velocity)
 {
     std::string c = "right " + std::to_string(distance);
-    simulator->command(c);
+    simulator->command(c, commandIntervalUsleep, commandFps, totalCommandTimeInSecond);
 }
 
 void NavigationController::rotateCw(double angle, double velocity)
 {
     std::string c = "cw " + std::to_string(angle);
-    simulator->command(c);
+    simulator->command(c, commandIntervalUsleep, commandFps, totalCommandTimeInSecond);
 }
 
 void NavigationController::rotateCcw(double angle, double velocity)
 {
     std::string c = "ccw " + std::to_string(angle);
-    simulator->command(c);
+    simulator->command(c, commandIntervalUsleep, commandFps, totalCommandTimeInSecond);
 }
 
 cv::Point3f NavigationController::pixelToDirection(const cv::Point2i &pixel)
@@ -77,11 +91,8 @@ void NavigationController::moveAlongDirection(const cv::Point3f &direction, doub
     //     moveRight(distance*abs(direction.x), velocity);
     // else
     //     moveLeft(distance*abs(direction.x), velocity);
-    cout << std::acos(direction.z/(std::sqrt(direction.z*direction.z + direction.x*direction.x))) << endl;
-    
-    // float angle = std::acos(direction.z/(std::sqrt(direction.x*direction.x + direction.y*direction.y)));
-    float angle = 2;
-    cout << "anlge is " << angle << endl;
+    float angle = std::acos(direction.z/(std::sqrt(direction.z*direction.z + direction.x*direction.x)));
+    angle *= 180.0/M_PI;
     if (direction.x > 0)
         rotateCw(angle, velocity);
     else

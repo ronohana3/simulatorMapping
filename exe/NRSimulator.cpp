@@ -20,19 +20,18 @@ int main(int argc, char **argv) {
     bool printPosition = false;
 
 
-    // while(true)
-    // {
-        
-    //     Eigen::Matrix4d mat = simulator->s_cam.GetModelViewMatrix();
-    //     Eigen::Vector3d cam_pos = mat.inverse().topRightCorner<3,1>();
-    //     cout << cam_pos[0] << "," << cam_pos[1] << "," << cam_pos[2] << endl;
+    while(true)
+    {
+        Eigen::Matrix4d mat = simulator->s_cam.GetModelViewMatrix();
+        Eigen::Vector3d cam_pos = mat.inverse().topRightCorner<3,1>();
+        cout << cam_pos[0] << "," << cam_pos[1] << "," << cam_pos[2] << "," << endl;
 
-    //     int key = cv::waitKey(100);
-    //     if (key != -1)
-    //     {
-    //         break;
-    //     }
-    // }
+        int key = cv::waitKey(200);
+        if (key != -1)
+        {
+            break;
+        }
+    }
 
     while(true)
     {

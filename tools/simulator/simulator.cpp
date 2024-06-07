@@ -116,7 +116,7 @@ void Simulator::simulatorRunThread() {
             .SetHandler(&handler);
 
     int secondModelPositionIndex = 0;
-    int secondModelPositionTimeInterval = 500; // ms
+    int secondModelPositionTimeInterval = 150; // ms
     auto secondModelPositionUpdatedTimestamp = chrono::system_clock::now();
 
     while (!pangolin::ShouldQuit() && !stopFlag) {

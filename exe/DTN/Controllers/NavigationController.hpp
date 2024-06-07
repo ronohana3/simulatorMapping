@@ -13,6 +13,10 @@ public:
 private:
     Simulator* simulator;
     CamParam camParam;
+
+    int commandIntervalUsleep = 5000;
+    int totalCommandTimeInSecond = 1;
+    int commandFps = 30;
     
     void moveUp(double distance, double velocity);
     void moveDown(double distance, double velocity);
