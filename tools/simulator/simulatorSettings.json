@@ -1,0 +1,29 @@
+{
+    "Camera" : {
+        "fx" : 619.6508392029048,
+        "fy" : 618.5264705043031,
+        "cx" : 321.889056995824,
+        "cy" : 243.808679723913814
+    },
+    "modelPath" : "/home/rbdlab/Projects/IronDrone/all-data/aaa/untitled.obj",
+    "modelTextureNameToAlignTo" : "floor",
+    "secondModelPath" : "/home/rbdlab/Projects/IronDrone/all-data/drone-test/drone.obj",
+    "movementFactor" : 0.01,
+    "secondModelPositionTimeInterval" : 1,
+    "secondModelInitialForwardDirection" : {
+        "x": -0.357791,
+        "z": 0.933791
+    },
+    "secondModelYawAxis" : { 
+        "x" : 0.0, 
+        "y" : 1.0,
+        "z" : 0.0
+    },
+    "secondModelPitchAxis" : {
+        "x" : 0.483145, 
+        "y" : 0.0, 
+        "z" : -0.1510799
+    },
+    "secondModelpitchAngle" : 0.261799,
+    "secondModelMovementEnabled" : true
+}

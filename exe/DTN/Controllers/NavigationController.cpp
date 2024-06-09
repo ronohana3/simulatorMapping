@@ -8,16 +8,32 @@ void NavigationController::moveAlongBoxDirection(const cv::Rect &box, double dis
     float distanceFromDrone = 1.0 - (float)box.area()/(camParam.width * camParam.height);
     cv::Point2i frameCenterPixel = cv::Point2i((int)camParam.cx, (int)camParam.cy);
 
-    if (abs(boxCenterPixel.y - frameCenterPixel.y) < 5 && abs(boxCenterPixel.x - frameCenterPixel.x) < 5 && distanceFromDrone < 0.7)
-    {   
-        // Attack
-        moveForward(0.6, velocity);
-    }
+    // if (abs(boxCenterPixel.y - frameCenterPixel.y) < 5 && abs(boxCenterPixel.x - frameCenterPixel.x) < 5 && distanceFromDrone < 0.7)
+    // {   
+    //     // Attack
+    //     moveForward(0.6, velocity);
+    // }
+    // else
+    // {
+    //     cv::Point3f direction = pixelToDirection(boxCenterPixel);
+    //     moveAlongDirection(direction, distance, velocity);
+    // }
+    float distanceToMaintain = 0.95;
+    float MinDistanceFromDrone = 0.7;
+    int commandIntervalUsleepDelta = 0;
+
+    if (distanceFromDrone > distanceToMaintain)
+        commandIntervalUsleep -= commandIntervalUsleepDelta;
     else
+        commandIntervalUsleep += commandIntervalUsleepDelta;
+
+
+    if (distanceFromDrone > MinDistanceFromDrone)
     {
         cv::Point3f direction = pixelToDirection(boxCenterPixel);
         moveAlongDirection(direction, distance, velocity);
     }
+
     
 }
 

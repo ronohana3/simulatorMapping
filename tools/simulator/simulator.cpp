@@ -4,6 +4,7 @@
 
 #include "simulator.h"
 #include "secondModelPath.h"
+#include <nlohmann/json.hpp>
 
 cv::Mat Simulator::getCurrentLocation() {
     locationLock.lock();
@@ -20,15 +21,27 @@ void Simulator::getFrame(cv::Mat &dst) {
 }
 
 Simulator::Simulator() : stopFlag(false), ready(false),cull_backfaces(false), viewportDesiredSize(640, 480) {
-    modelPath = "/home/rbdlab/Projects/IronDrone/all-data/aaa/untitled.obj";
-    modelTextureNameToAlignTo = "floor";
-    secondModelPath = "/home/rbdlab/Projects/IronDrone/all-data/drone-test/drone.obj";
-    movementFactor = 0.01;
-    float fx = 619.6508392029048;
-    float fy = 618.5264705043031;
-    float cx = 321.889056995824;
-    float cy = 243.808679723913814;
+
+    std::ifstream fSettings(this->GetSettingsPath());
+    nlohmann::json data = nlohmann::json::parse(fSettings);
+    fSettings.close();
+    float fx = data["Camera"]["fx"];
+    float fy = data["Camera"]["fy"];
+    float cx = data["Camera"]["cx"];
+    float cy = data["Camera"]["cy"];
     K << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
+    
+    modelPath = data["modelPath"];
+    modelTextureNameToAlignTo = data["modelTextureNameToAlignTo"];
+    secondModelPath = data["secondModelPath"];
+    movementFactor = data["movementFactor"];
+    
+    secondModelMovementEnabled = data["secondModelMovementEnabled"];
+    secondModelPositionTimeInterval = data["secondModelPositionTimeInterval"];
+    secondModelInitialForwardDirection = Eigen::Vector2f(data["secondModelInitialForwardDirection"]["x"], data["secondModelInitialForwardDirection"]["z"]).normalized();
+    secondModelYawAxis = Eigen::Vector3f(data["secondModelYawAxis"]["x"], data["secondModelYawAxis"]["y"], data["secondModelYawAxis"]["z"]).normalized();
+    secondModelPitchAxis = Eigen::Vector3f(data["secondModelPitchAxis"]["x"], data["secondModelPitchAxis"]["y"], data["secondModelPitchAxis"]["z"]).normalized();
+    secondModelpitchAngle = data["secondModelpitchAngle"];
 }
 
 Simulator::~Simulator() {
@@ -81,14 +94,13 @@ void Simulator::simulatorRunThread() {
     pangolin::RegisterKeyPressCallback('d', [&]() { applyRightToModelCam(s_cam, -movementFactor); });
     pangolin::RegisterKeyPressCallback('e', [&]() { applyYawRotationToModelCam(s_cam, 1); });
     pangolin::RegisterKeyPressCallback('q', [&]() { applyYawRotationToModelCam(s_cam, -1); });
+    pangolin::RegisterKeyPressCallback('2', [&]() { applyForwardToModelCam(s_cam, movementFactor); applyYawRotationToModelCam(s_cam, 1); });
+    pangolin::RegisterKeyPressCallback('1', [&]() { applyForwardToModelCam(s_cam, movementFactor); applyYawRotationToModelCam(s_cam, -1); });
     pangolin::RegisterKeyPressCallback('r', [&]() { applyUpModelCam(s_cam, -movementFactor); });// ORBSLAM y axis is reversed
     pangolin::RegisterKeyPressCallback('f', [&]() { applyUpModelCam(s_cam, movementFactor); });
     
     
     const pangolin::Geometry modelGeometry = pangolin::LoadGeometry(modelPath);  
-    // std::cout << modelGeometry.textures.size() << std::endl;
-    // std::cout << modelGeometry.objects.size() << std::endl;
-    // std::cout << modelGeometry.buffers.size() << std::endl;
     alignModelViewPointToSurface(modelGeometry, modelTextureNameToAlignTo);
     geomToRender = pangolin::ToGlGeometry(modelGeometry);
     for (auto &buffer: geomToRender.buffers) {
@@ -96,9 +108,6 @@ void Simulator::simulatorRunThread() {
     }
 
     const pangolin::Geometry secondModelGeometry = pangolin::LoadGeometry(secondModelPath);
-    // std::cout << secondModelGeometry.textures.size() << std::endl;
-    // std::cout << secondModelGeometry.objects.size() << std::endl;
-    // std::cout << secondModelGeometry.buffers.size() << std::endl;
     secondGeomToRender = pangolin::ToGlGeometry(secondModelGeometry);
     for (auto &buffer: secondGeomToRender.buffers) {
         buffer.second.attributes.erase("normal");
@@ -115,20 +124,13 @@ void Simulator::simulatorRunThread() {
             .SetBounds(0.0, 1.0, 0.0, 1.0, ((float) -viewportDesiredSize[0] / (float) viewportDesiredSize[1]))
             .SetHandler(&handler);
 
+    // Second geomtry movement parameters
     int secondModelPositionIndex = 0;
-    int secondModelPositionTimeInterval = 150; // ms
-    auto secondModelPositionUpdatedTimestamp = chrono::system_clock::now();
+    int secondModelYawAngleIndex = 0;    
+    auto secondModelUpdatedTimestamp = chrono::system_clock::now();
 
     while (!pangolin::ShouldQuit() && !stopFlag) {
         
-        auto msSinceSecondModelPositionUpdated = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - secondModelPositionUpdatedTimestamp).count();
-    
-        if(msSinceSecondModelPositionUpdated > secondModelPositionTimeInterval)
-        {
-            secondModelPositionIndex = (secondModelPositionIndex + 3) % secondModelPositionsCount;
-            secondModelPositionUpdatedTimestamp = chrono::system_clock::now();
-        }
-
         // ready = true;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -144,13 +146,36 @@ void Simulator::simulatorRunThread() {
             program.SetUniform("KT_cw", s_cam.GetProjectionMatrix() * s_cam.GetModelViewMatrix());
             pangolin::GlDraw(program, geomToRender, nullptr);
 
-                
-            Eigen::Affine3f secondGeomTransformation = Eigen::Affine3f::Identity();
-            secondGeomTransformation.translate(Eigen::Vector3f(secondModelPositions[secondModelPositionIndex],
-                                                               secondModelPositions[secondModelPositionIndex + 1], 
-                                                               secondModelPositions[secondModelPositionIndex + 2]));
 
-            program.SetUniform("KT_cw", s_cam.GetProjectionMatrix() * s_cam.GetModelViewMatrix() * secondGeomTransformation.matrix());
+            if (secondModelMovementEnabled)
+            {
+                auto msSinceSecondModelPositionUpdated = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - secondModelUpdatedTimestamp).count();
+        
+                if(msSinceSecondModelPositionUpdated > secondModelPositionTimeInterval)
+                {
+                    secondModelPositionIndex = (secondModelPositionIndex + 3) % secondModelPositionsCount;
+                    secondModelYawAngleIndex = (secondModelYawAngleIndex + 1) % secondModelYawAngleRotationsCount;
+                    secondModelUpdatedTimestamp = chrono::system_clock::now();
+                }
+            }
+
+            Eigen::Vector3f secondModelPosition = Eigen::Vector3f(secondModelPositions[secondModelPositionIndex],
+                                                                secondModelPositions[secondModelPositionIndex + 1], 
+                                                                secondModelPositions[secondModelPositionIndex + 2]);
+            
+            // calculate yaw rotation matrix
+            Eigen::Affine3f yawRotation = Eigen::Affine3f(Eigen::AngleAxisf(secondModelYawAngleRotations[secondModelYawAngleIndex], secondModelYawAxis.normalized()));
+            // calculate pitch rotation matrix
+            Eigen::Affine3f pitchRotation = Eigen::Affine3f(Eigen::AngleAxisf(secondModelpitchAngle, secondModelPitchAxis.normalized()));       
+            
+            // create the matrix transformation that combines both translation and rotations
+            Eigen::Affine3f secondModelTransformation = Eigen::Affine3f::Identity();
+            secondModelTransformation.translate(secondModelPosition);
+            secondModelTransformation = secondModelTransformation * yawRotation;
+            secondModelTransformation = secondModelTransformation * pitchRotation;
+            
+
+            program.SetUniform("KT_cw", s_cam.GetProjectionMatrix() * s_cam.GetModelViewMatrix() * secondModelTransformation.matrix());
             pangolin::GlDraw(program, secondGeomToRender, nullptr);
 
             program.Unbind();

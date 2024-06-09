@@ -14,7 +14,7 @@ private:
     Simulator* simulator;
     CamParam camParam;
 
-    int commandIntervalUsleep = 5000;
+    int commandIntervalUsleep = 3000;
     int totalCommandTimeInSecond = 1;
     int commandFps = 30;
     

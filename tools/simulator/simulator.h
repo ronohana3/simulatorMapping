@@ -116,6 +116,13 @@ private:
     std::mutex frameLock;
     cv::Mat m_frame;
 
+    bool secondModelMovementEnabled;
+    int secondModelPositionTimeInterval; // ms
+    Eigen::Vector2f secondModelInitialForwardDirection;
+    Eigen::Vector3f secondModelYawAxis;
+    Eigen::Vector3f secondModelPitchAxis;
+    float secondModelpitchAngle;
+
     void simulatorRunThread();
 
     void extractSurface(const pangolin::Geometry &modelGeometry, std::string modelTextureNameToAlignTo,
@@ -142,6 +149,13 @@ private:
     void static applyUpModelCam(pangolin::OpenGlRenderState &cam, double value);
 
     void static applyPitchRotationToModelCam(pangolin::OpenGlRenderState &cam, double value);
+
+    inline static std::string GetSettingsPath() {
+         std::string settingPath = std::filesystem::current_path();
+         settingPath += "/../tools/simulator/simulatorSettings.json";
+         return settingPath;
+      };
+    
 
 };
 
