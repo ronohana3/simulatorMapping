@@ -23,23 +23,27 @@ void ValidateBoxInBackground(Inference *inf, Mat &frame, Rect box, bool *isBusy,
     std::thread([&, inf, frame, box, isBusy, foundDrone] {
         std::vector<Detection> output = inf->runInference(frame);
         int detections = output.size();
+        std::cout << "Validation: Number of detections: " << detections << std::endl;
         if (detections > 0)
         {
-            cv::imshow("Test", frame);
-            sleep(2);
             Detection detection = output[0];
             for (int j=1; j<detections; j++)
                 if(output[j].confidence > detection.confidence)
                     detection = output[j];
-            if(detection.confidence > 0.55 && detection.box.contains(Point2i(box.x + box.width/2, box.y + box.height/2)))
+            if(detection.box.contains(Point2i(box.x + box.width/2, box.y + box.height/2)))
+            {
                 *foundDrone = true;
+            }
             else
+            {
                 *foundDrone = false;
-
-            
+            }
         }
         else
+        {
             *foundDrone = false;
+        }
+            
         
         *isBusy = false;
         
@@ -63,7 +67,11 @@ int main(int argc, char **argv) {
     Inference inf("http://localhost:5000/inference", cv::Size(640, 640));
     Mat frame, grayFrame;
     Rect boundingBox;
+
+    Rect lastTrackedBox;
+    
     CMT tracker = CMT();
+    // int trackerPrevActivePointsCount = 0;
     bool isTracking = false;
     int frameCount = 1;
 
@@ -79,18 +87,17 @@ int main(int argc, char **argv) {
     DroneController drone(simulator, cameraParameters);
 
     namedWindow("Stream");
-    // namedWindow("Test");
 
     bool validationInProcess = false;
     bool foundDrone = false;
     Mat validationFrame;
 
 
-    int fourcc = VideoWriter::fourcc('M', 'J', 'P', 'G');
-    string destVideoPath = "/home/rbdlab/Projects/IronDrone/simulatorVideos/sim_output.avi";
-    VideoWriter writer;
-    writer.open(destVideoPath, fourcc, 10, Size(640, 480));
-
+    // int fourcc = VideoWriter::fourcc('M', 'J', 'P', 'G');
+    // string destVideoPath = "/home/rbdlab/Projects/IronDrone/simulatorVideos/sim_output.avi";
+    // VideoWriter writer;
+    // writer.open(destVideoPath, fourcc, 10, Size(640, 480));
+    
     while (true) 
     {
         drone.getFrame(frame);
@@ -105,9 +112,10 @@ int main(int argc, char **argv) {
         std::cout << "Start proccesing frame "<< frame.size() <<" #" << frameCount << std::endl;
         std::cout << "Tracking: " << (isTracking ? "yes" : "no" ) << std::endl;
 
-        // Detection
+        // Scanning
         if (!isTracking)
         {
+            drone.scan(lastTrackedBox);
             std::vector<Detection> output = inf.runInference(frame);
             int detections = output.size();
             std::cout << "Number of detections: " << detections << std::endl;
@@ -129,7 +137,11 @@ int main(int argc, char **argv) {
         }
         else
         {
+            // trackerPrevActivePointsCount = tracker.points_active.size();
             tracker.processFrame(grayFrame);
+            // float relDiff = std::abs(trackerPrevActivePointsCount - (int)tracker.points_active.size())/(float)trackerPrevActivePointsCount;
+            // if(relDiff < 0.50 && tracker.points_active.size() > 10)
+            // {
 
             if(0.05*tracker.init_points_active_size < tracker.points_active.size() && tracker.points_active.size() > 10 && foundDrone)
             {
@@ -138,6 +150,8 @@ int main(int argc, char **argv) {
                 // {
                 //     frame.copyTo(validationFrame);
                 //     ValidateBoxInBackground(&inf, validationFrame, tracker.bb_rot.boundingRect(), &validationInProcess, &foundDrone);
+                // }else{
+                //     std::cout << "Validation is busy" << std::endl;    
                 // }
 
                 Point2f vertices[4];
@@ -154,6 +168,7 @@ int main(int argc, char **argv) {
                 std::cout << "Active points: " << tracker.points_active.size() << std::endl;
                 
                 auto trackingBox = tracker.bb_rot.boundingRect();
+                lastTrackedBox = trackingBox;
                 std::thread([&, trackingBox] {
                     drone.navigateToBox(trackingBox);
                 }).join();
@@ -163,15 +178,14 @@ int main(int argc, char **argv) {
                 std::cout << "Lost tracking" << std::endl;
                 isTracking = false;
                 tracker = CMT();
-
             }
         }
 
         frameCount++;
         cv::imshow("Stream", frame);
 
-        if (writer.isOpened())
-            writer.write(frame);
+        // if (writer.isOpened())
+        //     writer.write(frame);
 
         int key = cv::waitKey(50);
         
@@ -183,7 +197,7 @@ int main(int argc, char **argv) {
 
     destroyAllWindows();
 
-    writer.release();
+    // writer.release();
 
     frame.release();
     grayFrame.release();

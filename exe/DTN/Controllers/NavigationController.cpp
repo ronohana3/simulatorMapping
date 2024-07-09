@@ -33,9 +33,15 @@ void NavigationController::moveAlongBoxDirection(const cv::Rect &box, double dis
         cv::Point3f direction = pixelToDirection(boxCenterPixel);
         moveAlongDirection(direction, distance, velocity);
     }
-
-    
 }
+
+void NavigationController::rotateInPlace(bool isCw, float angle)
+{
+    if (isCw)
+        rotateCw(angle, 0);
+    else
+        rotateCcw(angle, 0);
+}   
 
 void NavigationController::moveUp(double distance, double velocity) 
 {

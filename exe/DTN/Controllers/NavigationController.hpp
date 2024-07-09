@@ -10,6 +10,7 @@ class NavigationController
 public:
     NavigationController(Simulator *sim, CamParam &par) : simulator(sim), camParam(par) {};
     void moveAlongBoxDirection(const cv::Rect &box, double distance, double velocity);
+    void rotateInPlace(bool isCw, float degrees);
 private:
     Simulator* simulator;
     CamParam camParam;
